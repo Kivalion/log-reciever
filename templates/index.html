@@ -41,12 +41,7 @@
       <div class="table-responsive shadow-sm">
         <table class="table table-striped table-hover mb-0" id="logsTable">
           <thead class="table-dark">
-            <tr>
-              <th scope="col">MAC Address</th>
-              <th scope="col">Level</th>
-              <th scope="col">Message</th>
-              <th scope="col">Timestamp (UTC)</th>
-            </tr>
+            <tr></tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -54,7 +49,8 @@
 
       <div class="alert alert-info mt-3" role="alert">
         Use the API endpoint <code>POST /api/logs</code> with JSON payloads like
-        <code>{"mac_address": "AA:BB:CC:DD:EE:FF", "level": "info", "message": "Started"}</code> to add entries.
+        <code>{"mac_address": "AA:BB:CC:DD:EE:FF", "message": "Started", "battery": 97}</code> to add entries.
+        Any additional fields beyond the MAC address are stored and displayed automatically.
       </div>
     </div>
 

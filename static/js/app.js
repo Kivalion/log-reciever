@@ -1,8 +1,17 @@
 const tableBody = document.querySelector('#logsTable tbody');
+const tableHeadRow = document.querySelector('#logsTable thead tr');
 const macFilter = document.getElementById('macFilter');
 const searchInput = document.getElementById('searchInput');
 const sortSelect = document.getElementById('sortSelect');
 const refreshBtn = document.getElementById('refreshBtn');
+
+const BASE_COLUMNS = ['mac_address', 'level', 'message', 'created_at'];
+const COLUMN_LABELS = {
+  mac_address: 'MAC Address',
+  level: 'Level',
+  message: 'Message',
+  created_at: 'Timestamp (UTC)',
+};
 
 async function fetchLogs() {
   const [sortField, sortOrder] = sortSelect.value.split(':');
@@ -22,27 +31,95 @@ async function fetchLogs() {
   return response.data.logs;
 }
 
+function titleize(column) {
+  if (COLUMN_LABELS[column]) {
+    return COLUMN_LABELS[column];
+  }
+
+  return column
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+function deriveColumns(logs) {
+  const extras = new Set();
+  logs.forEach((log) => {
+    Object.keys(log || {}).forEach((key) => {
+      if (!BASE_COLUMNS.includes(key)) {
+        extras.add(key);
+      }
+    });
+  });
+
+  return [...BASE_COLUMNS, ...Array.from(extras).sort()];
+}
+
+function renderHeader(columns) {
+  tableHeadRow.innerHTML = '';
+  columns.forEach((column) => {
+    const th = document.createElement('th');
+    th.scope = 'col';
+    th.textContent = titleize(column);
+    tableHeadRow.appendChild(th);
+  });
+}
+
 function renderLogs(logs) {
   tableBody.innerHTML = '';
+  const columns = logs.length > 0 ? deriveColumns(logs) : [...BASE_COLUMNS];
+  renderHeader(columns);
+
   if (logs.length === 0) {
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="4" class="text-center py-4 text-muted">No logs found</td>
-      </tr>`;
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = columns.length;
+    cell.className = 'text-center py-4 text-muted';
+    cell.textContent = 'No logs found';
+    row.appendChild(cell);
+    tableBody.appendChild(row);
     return;
   }
 
   const macAddresses = new Set();
 
   logs.forEach((log) => {
-    macAddresses.add(log.mac_address);
+    if (log.mac_address) {
+      macAddresses.add(log.mac_address);
+    }
     const row = document.createElement('tr');
-    row.innerHTML = `
-      <td><code>${log.mac_address}</code></td>
-      <td>${log.level ?? ''}</td>
-      <td>${log.message}</td>
-      <td>${new Date(log.created_at).toLocaleString()}<br /><small class="text-muted">${log.created_at}</small></td>
-    `;
+
+    columns.forEach((column) => {
+      const cell = document.createElement('td');
+      let value = log[column];
+
+      if (column === 'mac_address') {
+        const code = document.createElement('code');
+        code.textContent = value == null ? '' : String(value);
+        cell.appendChild(code);
+      } else if (column === 'created_at') {
+        if (value) {
+          const primary = document.createElement('div');
+          primary.textContent = new Date(value).toLocaleString();
+          const secondary = document.createElement('small');
+          secondary.className = 'text-muted';
+          secondary.textContent = value;
+          cell.appendChild(primary);
+          cell.appendChild(document.createElement('br'));
+          cell.appendChild(secondary);
+        }
+      } else {
+        if (value === null || value === undefined) {
+          value = '';
+        } else if (typeof value === 'object') {
+          value = JSON.stringify(value);
+        }
+        cell.textContent = String(value);
+      }
+
+      row.appendChild(cell);
+    });
+
     tableBody.appendChild(row);
   });
 
@@ -70,10 +147,15 @@ async function refreshLogs() {
     renderLogs(logs);
   } catch (error) {
     console.error('Failed to load logs', error);
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="4" class="text-center text-danger py-4">Failed to load logs</td>
-      </tr>`;
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    const columnCount = tableHeadRow.children.length || BASE_COLUMNS.length;
+    cell.colSpan = columnCount;
+    cell.className = 'text-center text-danger py-4';
+    cell.textContent = 'Failed to load logs';
+    row.appendChild(cell);
+    tableBody.innerHTML = '';
+    tableBody.appendChild(row);
   }
 }
 

@@ -4,7 +4,7 @@ A minimal Flask application for receiving JSON log entries over HTTP and visuali
 
 ## Features
 
-- `POST /api/logs` accepts JSON payloads with `mac_address`, `message`, and optional `level` fields.
+- `POST /api/logs` accepts JSON payloads with `mac_address` plus any additional fields you want to store (such as `message`, `level`, or device metrics).
 - `GET /api/logs` returns stored logs with optional `mac`, `search`, `sort`, and `order` query parameters.
 - Responsive HTML dashboard for inspecting logs with built-in filtering, sorting, and search controls.
 - Logs are persisted in a local SQLite database (`logs.db`).
@@ -38,10 +38,13 @@ curl -X POST http://localhost:8000/api/logs \
   -H "Content-Type: application/json" \
   -d '{
     "mac_address": "AA:BB:CC:DD:EE:FF",
-    "level": "info",
-    "message": "Device started"
+    "message": "Device started",
+    "battery": 97,
+    "temperature": 21.4
   }'
 ```
+
+Any extra fields are stored alongside the core metadata and automatically appear as new columns in the dashboard.
 
 ### Environment variables
 
